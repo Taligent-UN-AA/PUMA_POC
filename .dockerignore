@@ -1,0 +1,15 @@
+.venv
+venv
+__pycache__
+*.py[cod]
+.git
+.gitignore
+.env
+.DS_Store
+minimal bu
+minimal_bu_2
+uploads/*
+minimal/output/*
+*.xlsx
+Dockerfile
+docker-compose.yml

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+    <button onclick="testWebSocket()">Test WebSocket</button>
+    <div id="log"></div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            logDiv.innerHTML += `<p>${new Date().toLocaleTimeString()}: ${message}</p>`;
+            console.log(message);
+        }
+
+        function testWebSocket() {
+            const sessionId = `test_${Date.now()}`;
+            log(`Connecting to WebSocket with session_id: ${sessionId}`);
+            
+            const ws = new WebSocket(`ws://localhost:8000/ws/${sessionId}`);
+            
+            ws.onopen = () => {
+                log('✅ WebSocket connected');
+            };
+            
+            ws.onmessage = (event) => {
+                log(`📨 Message received: ${event.data}`);
+            };
+            
+            ws.onerror = (error) => {
+                log(`❌ WebSocket error: ${error}`);
+            };
+            
+            ws.onclose = (event) => {
+                log(`🔌 WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`);
+            };
+            
+            // Send ping every 2 seconds
+            const interval = setInterval(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    log('📤 Sending ping');
+                    ws.send('ping');
+                } else {
+                    clearInterval(interval);
+                }
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

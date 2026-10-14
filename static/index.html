@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PUMA Data Harmonizer</title>
+    
+    <!-- AG-Grid CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.1/styles/ag-grid.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.1/styles/ag-theme-alpine.css">
+    
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fafafa;
+            color: #1a1a1a;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+        
+        .header .subtitle {
+            font-size: 1em;
+            color: #666;
+            font-weight: 400;
+        }
+        
+        /* Card */
+        .card {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e5e5e5;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        
+        .card h2 {
+            font-size: 1.125em;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 24px;
+            letter-spacing: -0.01em;
+        }
+        
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed #d4d4d4;
+            border-radius: 8px;
+            padding: 48px 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fafafa;
+        }
+        
+        .upload-area:hover {
+            border-color: #7cb342;
+            background: #f8faf7;
+        }
+        
+        .upload-area.dragover {
+            border-color: #7cb342;
+            background: #f1f8e9;
+            border-style: solid;
+        }
+        
+        .upload-icon {
+            font-size: 2.5em;
+            margin-bottom: 16px;
+            opacity: 0.4;
+        }
+        
+        .upload-text {
+            font-size: 1em;
+            color: #1a1a1a;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .upload-subtext {
+            color: #737373;
+            font-size: 0.875em;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .btn-primary {
+            background: #7cb342;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #689f38;
+        }
+        
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #1a1a1a;
+            border: 1px solid #e5e5e5;
+        }
+        
+        .btn-secondary:hover {
+            background: #eeeeee;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+        
+        /* Progress */
+        .progress-container {
+            margin: 24px 0;
+            display: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #7cb342;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-log {
+            background: #fafafa;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            padding: 16px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.875em;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+        }
+        
+        .progress-log-item {
+            padding: 6px 0;
+            color: #525252;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .progress-log-item.success {
+            color: #7cb342;
+        }
+        
+        .progress-log-item.error {
+            color: #ef5350;
+        }
+        
+        .progress-log-item.waiting {
+            color: #fb8c00;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .progress-log-time {
+            color: #a3a3a3;
+            font-size: 0.85em;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Status Messages */
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin: 16px 0;
+            display: none;
+            font-size: 0.875em;
+            border-left: 3px solid;
+        }
+        
+        .status-success {
+            background: #f1f8e9;
+            color: #33691e;
+            border-color: #7cb342;
+        }
+        
+        .status-error {
+            background: #ffebee;
+            color: #c62828;
+            border-color: #ef5350;
+        }
+        
+        .status-info {
+            background: #e3f2fd;
+            color: #1565c0;
+            border-color: #42a5f5;
+        }
+        
+        /* Results Section */
+        .results-section {
+            display: none;
+        }
+        
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: #fafafa;
+            border: 1px solid #e5e5e5;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .stat-value {
+            font-size: 1.75em;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+            letter-spacing: -0.02em;
+        }
+        
+        .stat-label {
+            font-size: 0.875em;
+            color: #737373;
+            font-weight: 400;
+        }
+        
+        /* Sheet Tabs */
+        .sheet-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #e5e5e5;
+            padding-bottom: 12px;
+        }
+        
+        .sheet-tab {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.875em;
+            transition: all 0.2s;
+            color: #525252;
+        }
+        
+        .sheet-tab.active {
+            background: #7cb342;
+            color: white;
+            border-color: #7cb342;
+        }
+        
+        .sheet-tab:hover:not(.active) {
+            background: #f5f5f5;
+            border-color: #d4d4d4;
+        }
+        
+        /* Table */
+        .table-container {
+            margin-top: 20px;
+        }
+        
+        .ag-theme-alpine {
+            height: 600px;
+            width: 100%;
+            --ag-border-color: #e5e5e5;
+            --ag-header-background-color: #fafafa;
+            --ag-font-family: 'Inter', sans-serif;
+            --ag-font-size: 13px;
+        }
+        
+        /* Actions */
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            justify-content: flex-start;
+        }
+        
+        /* Spinner */
+        .spinner {
+            border: 2px solid #f0f0f0;
+            border-top: 2px solid #7cb342;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            animation: spin 0.8s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Section Header */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        
+        .section-header h2 {
+            margin: 0;
+        }
+        
+        .badge {
+            background: #f5f5f5;
+            color: #525252;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 500;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 24px 16px;
+            }
+            
+            .card {
+                padding: 24px 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.5em;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>PUMA Data Harmonizer</h1>
+            <p class="subtitle">Extractor de Laboreos Agrícolas</p>
+        </div>
+        
+        <!-- Upload Section -->
+        <div class="card" id="uploadCard">
+            <div class="section-header">
+                <h2>Cargar archivo</h2>
+                <span class="badge">Paso 1</span>
+            </div>
+            
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Selecciona o arrastra un archivo Excel</div>
+                <div class="upload-subtext">Formatos soportados: .xlsx, .xls</div>
+                <input type="file" id="fileInput" accept=".xlsx,.xls">
+            </div>
+            
+            <div class="spinner" id="spinner"></div>
+            
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-log" id="progressLog"></div>
+            </div>
+            
+            <div class="status-message" id="statusMessage"></div>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="card results-section" id="resultsSection">
+            <div class="section-header">
+                <h2>Datos extraídos</h2>
+                <span class="badge">Paso 2</span>
+            </div>
+            
+            <div class="stats" id="stats"></div>
+            
+            <div class="sheet-tabs" id="sheetTabs"></div>
+            
+            <div class="table-container">
+                <div id="grid" class="ag-theme-alpine"></div>
+            </div>
+            
+            <div class="actions">
+                <button class="btn btn-primary" id="downloadBtn">
+                    <span>↓</span>
+                    <span>Descargar CSV</span>
+                </button>
+                <button class="btn btn-secondary" id="newFileBtn">
+                    <span>←</span>
+                    <span>Cargar otro archivo</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- AG-Grid JS -->
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@31.0.1/dist/ag-grid-community.min.js"></script>
+    
+    <script>
+        // Estado global
+        let currentData = null;
+        let currentSheet = 0;
+        let gridApi = null;
+        let gridColumnApi = null;
+        let currentWebSocket = null;
+        let sessionId = null;
+        
+        // Elementos DOM
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const spinner = document.getElementById('spinner');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressLog = document.getElementById('progressLog');
+        const statusMessage = document.getElementById('statusMessage');
+        const resultsSection = document.getElementById('resultsSection');
+        const sheetTabs = document.getElementById('sheetTabs');
+        const stats = document.getElementById('stats');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const newFileBtn = document.getElementById('newFileBtn');
+        
+        // Event listeners
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+        downloadBtn.addEventListener('click', downloadCSV);
+        newFileBtn.addEventListener('click', resetApp);
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+        
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+        
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+        
+        async function handleFile(file) {
+            // Validar extensión
+            const validExtensions = ['xlsx', 'xls'];
+            const extension = file.name.split('.').pop().toLowerCase();
+            
+            if (!validExtensions.includes(extension)) {
+                showStatus('error', 'Formato no válido. Solo se permiten archivos .xlsx o .xls');
+                return;
+            }
+            
+            // Generar session ID temporal
+            sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            console.log('Generated session_id:', sessionId);
+            
+            // Mostrar progress UI
+            showLoading(true);
+            addProgressLog('info', `Iniciando procesamiento de ${file.name}...`);
+            
+            // Conectar WebSocket PRIMERO
+            connectWebSocket(sessionId);
+            
+            // ESPERAR a que WebSocket esté conectado
+            console.log('Waiting for WebSocket connection...');
+            await waitForWebSocketConnection();
+            console.log('WebSocket connected, ready to upload');
+            
+            // Crear FormData con session_id
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('session_id', sessionId);
+            
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Error procesando archivo');
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentData = data;
+                    sessionId = data.session_id;
+                    addProgressLog('success', `✓ Procesamiento completado: ${data.total_records} registros extraídos`);
+                    setTimeout(() => {
+                        displayResults();
+                        showLoading(false);
+                    }, 500);
+                } else {
+                    throw new Error(data.error || 'Error desconocido');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                addProgressLog('error', `❌ Error: ${error.message}`);
+                showStatus('error', `Error: ${error.message}`);
+                showLoading(false);
+                // Cerrar WebSocket solo si hay error
+                if (currentWebSocket) {
+                    currentWebSocket.close();
+                    currentWebSocket = null;
+                }
+            }
+            // NO cerrar WebSocket aquí - esperar a que el procesamiento termine
+            // El WebSocket se cerrará cuando recibamos el mensaje 'complete'
+        }
+        
+        function waitForWebSocketConnection() {
+            return new Promise((resolve, reject) => {
+                const maxAttempts = 50; // 5 segundos máximo
+                let attempts = 0;
+                
+                const interval = setInterval(() => {
+                    attempts++;
+                    
+                    if (currentWebSocket && currentWebSocket.readyState === WebSocket.OPEN) {
+                        clearInterval(interval);
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(interval);
+                        reject(new Error('WebSocket connection timeout'));
+                    }
+                }, 100);
+            });
+        }
+        
+        function connectWebSocket(sessionId) {
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${wsProtocol}//${window.location.host}/ws/${sessionId}`;
+            
+            currentWebSocket = new WebSocket(wsUrl);
+            
+            currentWebSocket.onopen = () => {
+                console.log('WebSocket connected');
+            };
+            
+            currentWebSocket.onmessage = (event) => {
+                console.log('[WebSocket] Message received:', event.data);
+                console.log('[WebSocket] Message type:', typeof event.data);
+                
+                // Ignorar mensajes de keep-alive (pong)
+                if (event.data === 'pong' || event.data === '"pong"') {
+                    console.log('[WebSocket] Pong received (keep-alive)');
+                    return;
+                }
+                
+                try {
+                    let data;
+                    // El mensaje puede venir como string JSON o ya parseado
+                    if (typeof event.data === 'string') {
+                        data = JSON.parse(event.data);
+                    } else {
+                        data = event.data;
+                    }
+                    
+                    console.log('[WebSocket] Parsed data:', data);
+                    console.log('[WebSocket] Stage:', data.stage, 'Progress:', data.progress);
+                    
+                    updateProgress(data);
+                    
+                    // Cerrar WebSocket cuando el procesamiento esté completo
+                    if (data.stage === 'complete' || data.stage === 'error') {
+                        console.log('[WebSocket] Processing complete, closing connection...');
+                        setTimeout(() => {
+                            if (currentWebSocket) {
+                                currentWebSocket.close();
+                                currentWebSocket = null;
+                            }
+                        }, 1000);
+                    }
+                } catch (e) {
+                    console.error('[WebSocket] Error parsing message:', e);
+                    console.error('[WebSocket] Raw message:', event.data);
+                }
+            };
+            
+            currentWebSocket.onerror = (error) => {
+                console.error('[WebSocket] ERROR:', error);
+                console.error('[WebSocket] ReadyState:', currentWebSocket.readyState);
+            };
+            
+            currentWebSocket.onclose = (event) => {
+                console.log('[WebSocket] CLOSED');
+                console.log('[WebSocket] Close code:', event.code);
+                console.log('[WebSocket] Close reason:', event.reason);
+                console.log('[WebSocket] Was clean:', event.wasClean);
+            };
+            
+            // Keep-alive ping
+            const pingInterval = setInterval(() => {
+                if (currentWebSocket && currentWebSocket.readyState === WebSocket.OPEN) {
+                    currentWebSocket.send('ping');
+                } else {
+                    clearInterval(pingInterval);
+                }
+            }, 30000);
+        }
+        
+        function updateProgress(data) {
+            console.log('[updateProgress] Called with:', data);
+            
+            // Actualizar barra de progreso
+            progressFill.style.width = `${data.progress}%`;
+            console.log('[updateProgress] Progress bar updated to:', data.progress + '%');
+            
+            // Determinar tipo de log
+            let logClass = 'info';
+            if (data.stage === 'complete' || data.message.includes('✓') || data.message.includes('✅')) {
+                logClass = 'success';
+            } else if (data.stage === 'error' || data.message.includes('❌')) {
+                logClass = 'error';
+            } else if (data.message.includes('⏳') || data.message.includes('Llamando a GPT')) {
+                logClass = 'waiting';
+            }
+            
+            console.log('[updateProgress] Log class:', logClass);
+            
+            // Agregar mensaje al log
+            addProgressLog(logClass, data.message);
+        }
+        
+        function addProgressLog(type, message) {
+            console.log('[addProgressLog] Adding log:', type, message);
+            
+            const time = new Date().toLocaleTimeString('es-AR', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+            
+            const logItem = document.createElement('div');
+            logItem.className = `progress-log-item ${type}`;
+            logItem.innerHTML = `
+                <span class="progress-log-time">[${time}]</span>
+                <span>${message}</span>
+            `;
+            
+            console.log('[addProgressLog] progressLog element:', progressLog);
+            console.log('[addProgressLog] Log item created:', logItem);
+            
+            progressLog.appendChild(logItem);
+            progressLog.scrollTop = progressLog.scrollHeight;
+            
+            console.log('[addProgressLog] Log item appended. Total children:', progressLog.children.length);
+        }
+        
+        function showLoading(show) {
+            spinner.style.display = 'none'; // Ya no usamos spinner
+            progressContainer.style.display = show ? 'block' : 'none';
+            
+            if (!show) {
+                // Reset progress
+                progressFill.style.width = '0%';
+                progressLog.innerHTML = '';
+            }
+        }
+        
+        function showStatus(type, message) {
+            statusMessage.className = `status-message status-${type}`;
+            statusMessage.textContent = message;
+            statusMessage.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        function displayResults() {
+            resultsSection.style.display = 'block';
+            
+            // Mostrar estadísticas
+            displayStats();
+            
+            // Mostrar tabs de hojas
+            displaySheetTabs();
+            
+            // Mostrar primera hoja
+            displaySheet(0);
+            
+            // Scroll a resultados
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        function displayStats() {
+            const totalRecords = currentData.total_records;
+            const totalSheets = currentData.sheets.length;
+            const filename = currentData.filename;
+            
+            stats.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${totalRecords}</div>
+                    <div class="stat-label">Registros totales</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${totalSheets}</div>
+                    <div class="stat-label">Hojas procesadas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${filename}</div>
+                    <div class="stat-label">Archivo</div>
+                </div>
+            `;
+        }
+        
+        function displaySheetTabs() {
+            sheetTabs.innerHTML = '';
+            
+            currentData.results.forEach((result, index) => {
+                const tab = document.createElement('button');
+                tab.className = 'sheet-tab' + (index === 0 ? ' active' : '');
+                tab.textContent = `${result.sheet} (${result.total})`;
+                tab.onclick = () => {
+                    document.querySelectorAll('.sheet-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    displaySheet(index);
+                };
+                sheetTabs.appendChild(tab);
+            });
+        }
+        
+        function displaySheet(index) {
+            currentSheet = index;
+            const sheetData = currentData.results[index];
+            
+            if (sheetData.error) {
+                showStatus('error', `Error en hoja "${sheetData.sheet}": ${sheetData.error}`);
+                return;
+            }
+            
+            // Definir columnas
+            const columnDefs = [
+                { field: 'Id', width: 100, editable: false, pinned: 'left' },
+                { field: 'Productor', width: 130 },
+                { field: 'Campaña', width: 110 },
+                { field: 'Campo', width: 110 },
+                { field: 'Lote', width: 100 },
+                { field: 'Ambiente', width: 100 },
+                { field: 'Cultivo', width: 100 },
+                { field: 'Tipo Cultivo', width: 120 },
+                { field: 'Laboreo', width: 180 },
+                { field: 'Hectareas (Ha)', width: 130, type: 'numericColumn' },
+                { field: 'Pasadas (cant.)', width: 130, type: 'numericColumn' },
+                { field: 'Fecha', width: 110 },
+                { field: 'Tipo', width: 120 },
+                { field: 'Insumo', width: 180 },
+                { field: 'Dosis Insumo (Kg o litro/Ha aplicada)', width: 220, type: 'numericColumn' },
+                { field: 'Fertilizante', width: 130 },
+                { field: 'Dosis Fertilizantes (Kg o litro/Ha aplicada)', width: 240, type: 'numericColumn' },
+                { field: 'Model Id', width: 110 }
+            ];
+            
+            // Configuración del grid
+            const gridOptions = {
+                columnDefs: columnDefs,
+                rowData: sheetData.records,
+                defaultColDef: {
+                    editable: true,
+                    sortable: true,
+                    filter: true,
+                    resizable: true
+                },
+                enableCellTextSelection: true,
+                ensureDomOrder: true,
+                animateRows: true,
+                pagination: true,
+                paginationPageSize: 50,
+                onGridReady: (params) => {
+                    gridApi = params.api;
+                    gridColumnApi = params.columnApi;
+                }
+            };
+            
+            // Destruir grid anterior si existe
+            const gridDiv = document.getElementById('grid');
+            gridDiv.innerHTML = '';
+            
+            // Crear nuevo grid
+            new agGrid.Grid(gridDiv, gridOptions);
+        }
+        
+        async function downloadCSV() {
+            if (!gridApi) return;
+            
+            // Obtener datos editados del grid
+            const editedRecords = [];
+            gridApi.forEachNode(node => editedRecords.push(node.data));
+            
+            const sheetName = currentData.results[currentSheet].sheet;
+            const filename = `${currentData.filename.replace('.xlsx', '').replace('.xls', '')}_${sheetName}_editado.csv`;
+            
+            try {
+                const response = await fetch('/api/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        records: editedRecords,
+                        filename: filename
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Error generando CSV');
+                }
+                
+                // Descargar archivo
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                showStatus('success', '✓ CSV descargado exitosamente');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showStatus('error', `Error descargando CSV: ${error.message}`);
+            }
+        }
+        
+        function resetApp() {
+            // Cerrar WebSocket si está activo
+            if (currentWebSocket) {
+                currentWebSocket.close();
+                currentWebSocket = null;
+            }
+            
+            currentData = null;
+            currentSheet = 0;
+            gridApi = null;
+            sessionId = null;
+            fileInput.value = '';
+            resultsSection.style.display = 'none';
+            statusMessage.style.display = 'none';
+            progressContainer.style.display = 'none';
+            progressFill.style.width = '0%';
+            progressLog.innerHTML = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
